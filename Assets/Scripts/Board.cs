@@ -21,12 +21,13 @@ public class Board : MonoBehaviour
     private Vector3 initialClickPosition;
     private Vector3 finalClickPosition;
 
-    private const int MINIMUN_SWAP_DISTANCE_IN_PIXELS = 64;
+    private const int MINIMUN_SWAP_DISTANCE_IN_PIXELS = 16;
+    private const float MAX_SWAP_ANGULATION_IN_DEG = 90.0f; // value between 0 and 90 degrees;
 
     public void Awake()
     {
-        InitializeBoard();
-        InitializeMatchesArrayAsFalse();
+        InitializeBoardWithRandomGems();
+        InitializeMatchesArrayWithFalseValues();
         UpdateAllSpritesPositionAndNames();
     }
 
@@ -35,9 +36,9 @@ public class Board : MonoBehaviour
     {
         if (HaveAnyMatchesInActualGame())
         {
-            InitializeMatchesArrayAsFalse();
-            FindAllBoardMatches();
-            DestroyAllMatches();
+            InitializeMatchesArrayWithFalseValues();
+            PopulateMatchesArrayWithMatches();
+            DestroyAllPrefabsWithMatches();
             MoveGemsDown();
             InstantiateNewGemsInOrigin();
             UpdateAllSpritesPositionAndNames();
@@ -45,51 +46,32 @@ public class Board : MonoBehaviour
         }
 
 
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            UpdateAllSpritesPositionAndNames();
-        }
-
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             initialClickPosition = Input.mousePosition;
-            
         }
+
         if (Input.GetKeyUp(KeyCode.Mouse0))
         {
             finalClickPosition = Input.mousePosition;
-            if (Vector3.Distance(initialClickPosition, finalClickPosition) < MINIMUN_SWAP_DISTANCE_IN_PIXELS) {
+            
+            if (Vector3.Distance(initialClickPosition, finalClickPosition) < MINIMUN_SWAP_DISTANCE_IN_PIXELS)
+            {
                 return;
             }
             
-            float angleRad = Mathf.Atan2(finalClickPosition.y - initialClickPosition.y, finalClickPosition.x - initialClickPosition.x);
-            float angleDeg = Mathf.Rad2Deg * angleRad;
-
-            int[] el = GetElementOnPixel(initialClickPosition.x, initialClickPosition.y);
-
-            Vector2 moveDirection;
-            if (angleDeg > -30 && angleDeg < 30 && el[0] != numberOfObjectsInX-1)
+            Point clickedPoint = GetElementOnPixel(initialClickPosition.x, initialClickPosition.y);
+            if (clickedPoint.x < 0 || clickedPoint.x > numberOfObjectsInX || clickedPoint.y < 0 || clickedPoint.y > numberOfObjectsInY)
             {
-                moveDirection = new Vector2(1, 0);       
-            } else if (angleDeg > 60 && angleDeg < 120 && el[1] != numberOfObjectsInY-1)
-            {
-                moveDirection = new Vector2(0, 1);
-            } else if (angleDeg > 150 || angleDeg < -150 && el[0] != 0)
-            {
-                moveDirection = new Vector2(-1, 0);
-            } else if (angleDeg > -120 && angleDeg < -60 && el[1] != 0)
-            {
-                moveDirection = new Vector2(0, -1);
-            } else
-            {
-                moveDirection = new Vector2(0, 0);
+                return;
             }
 
-            MoveGem(new Vector2(el[0], el[1]), moveDirection);
+            Point moveDirection = GetMovementDirectionOfGem(initialClickPosition, finalClickPosition);
+            MoveGem(clickedPoint, moveDirection);
 
-            InitializeMatchesArrayAsFalse();
-            FindAllBoardMatches();
-            DestroyAllMatches();
+            InitializeMatchesArrayWithFalseValues();
+            PopulateMatchesArrayWithMatches();
+            DestroyAllPrefabsWithMatches();
             MoveGemsDown();
             InstantiateNewGemsInOrigin();
             UpdateAllSpritesPositionAndNames();
@@ -97,6 +79,43 @@ public class Board : MonoBehaviour
         }
     }
 
+
+    private Point GetMovementDirectionOfGem(Vector2 initialClickPosition, Vector2 finalClickPosition)
+    {
+        Point clickedPoint = GetElementOnPixel(initialClickPosition.x, initialClickPosition.y);
+        float angleRad = Mathf.Atan2(finalClickPosition.y - initialClickPosition.y, finalClickPosition.x - initialClickPosition.x);
+        float angleDeg = Mathf.Rad2Deg * angleRad;
+
+        float half_max_angle = MAX_SWAP_ANGULATION_IN_DEG / 2;
+        if (angleDeg > -half_max_angle && 
+            angleDeg <  half_max_angle && 
+            clickedPoint.x != numberOfObjectsInX-1)
+        {
+            return new Point(1, 0);
+        }
+        else if (angleDeg > 90 - half_max_angle && 
+                angleDeg <  90 + half_max_angle && 
+                clickedPoint.y != numberOfObjectsInY - 1)
+        {
+            return new Point(0, 1);
+        }
+        else if (angleDeg >  180 - half_max_angle || 
+                 angleDeg < -180 + half_max_angle && 
+                 clickedPoint.x != 0)
+        {
+            return new Point(-1, 0);
+        }
+        else if (angleDeg > -90 - half_max_angle && 
+                 angleDeg < -90 + half_max_angle && 
+                 clickedPoint.y != 0)
+        {
+            return new Point(0, -1);
+        }
+        else
+        {
+            return new Point(0, 0);
+        }
+    }
 
     private bool GameHaveAPossibleMoveToMake()
     {
@@ -106,19 +125,19 @@ public class Board : MonoBehaviour
         {
             for (int j = 0; j < numberOfObjectsInY-1; j++)
             {
-                InitializeMatchesArrayAsFalse();
+                InitializeMatchesArrayWithFalseValues();
                 board = (GameObject[][]) boardCopy.Clone();
-                MoveGem(new Vector2(i, j), new Vector2(1, 0));
-                FindAllBoardMatches();
+                MoveGem(new Point(i, j), new Point(1, 0));
+                PopulateMatchesArrayWithMatches();
                 if (HaveAnyMatchesInActualGame())
                 {
-                    InitializeMatchesArrayAsFalse();
+                    InitializeMatchesArrayWithFalseValues();
                     board = (GameObject[][])boardCopy.Clone();
                     return true;
                 }
             }
         }
-        InitializeMatchesArrayAsFalse();
+        InitializeMatchesArrayWithFalseValues();
         board = (GameObject[][])boardCopy.Clone();
         return false;
     }
@@ -165,8 +184,7 @@ public class Board : MonoBehaviour
             board[iX][iY] = newColumn[iY];
             if (board[iX][iY] != null)
             {
-                board[iX][iY].GetComponent<Gem>().positionX = iX;
-                board[iX][iY].GetComponent<Gem>().positionY = iY;
+                board[iX][iY].GetComponent<Gem>().position = new Point(iX, iY);
                 MoveGameObjectToPositionDeterminedByGemComponent(board[iX][iY]);
             }
         }
@@ -183,15 +201,14 @@ public class Board : MonoBehaviour
                 if (board[i][j] == null)
                 {
                     board[i][j] = Instantiate(GetRandomPrefab(), this.transform, false) as GameObject;
-                    board[i][j].GetComponent<Gem>().positionX = i;
-                    board[i][j].GetComponent<Gem>().positionY = j;
+                    board[i][j].GetComponent<Gem>().position = new Point(i, j);
                 }
             }
         }
     }
 
 
-    private void InitializeMatchesArrayAsFalse()
+    private void InitializeMatchesArrayWithFalseValues()
     {
         matches = new bool[numberOfObjectsInY][];
         for (int i = 0; i < matches.Length; i++)
@@ -200,14 +217,14 @@ public class Board : MonoBehaviour
         }
     }
 
-    private void FindAllBoardMatches()
+    private void PopulateMatchesArrayWithMatches()
     {
-        InitializeMatchesArrayAsFalse();
-        checkAllPossibleVerticalMatches();
-        checkAllPossibleHorizontalMatches();
+        InitializeMatchesArrayWithFalseValues();
+        CheckAllVerticalMatches();
+        CheckAllHorizontalMatches();
     }
 
-    private void DestroyAllMatches()
+    private void DestroyAllPrefabsWithMatches()
     {
         for (int i = 0; i < numberOfObjectsInY; i++)
         {
@@ -223,50 +240,47 @@ public class Board : MonoBehaviour
     }
 
 
-    private int[] GetElementOnPixel(float px, float py)
+    private Point GetElementOnPixel(float px, float py)
     {
-        int elementX = (int) Mathf.Floor((px - 32) / 64);
-        int elementY = (int) Mathf.Floor((py - 32) / 64);
-        return new int[] { elementX, elementY };
+        int x = (int) Mathf.Floor((px - 32) / 64);
+        int y = (int) Mathf.Floor((py - 32) / 64);
+        return new Point(x, y);
     }
 
 
-    public void MoveGem(Vector2 initialPosition, Vector2 direction)
+    public void MoveGem(Point initialPosition, Point direction)
     {
 
-        Vector2 finalPosition = initialPosition + direction;
+        Point finalPosition = initialPosition + direction;
 
-        string gemName = getNameOfObjectInPosition((int)initialPosition.x, (int)initialPosition.y);
+        string gemName = GetNameOfObjectInPosition(initialPosition);
         GameObject go = GameObject.Find(gemName);
 
-        gemName = getNameOfObjectInPosition((int)finalPosition.x, (int)finalPosition.y);
+        gemName = GetNameOfObjectInPosition(finalPosition);
         GameObject go2 = GameObject.Find(gemName);
 
-        int temp_posx = go.GetComponent<Gem>().positionX;
-        int temp_posy = go.GetComponent<Gem>().positionY;
-        go.GetComponent<Gem>().positionX = go2.GetComponent<Gem>().positionX;
-        go.GetComponent<Gem>().positionY = go2.GetComponent<Gem>().positionY;
-        go2.GetComponent<Gem>().positionX = temp_posx;
-        go2.GetComponent<Gem>().positionY = temp_posy;
+        Point tempPoint = go.GetComponent<Gem>().position;
+        go.GetComponent<Gem>().position = go2.GetComponent<Gem>().position;
+        go2.GetComponent<Gem>().position = tempPoint;
 
-        GameObject temp = board[(int)initialPosition.x][(int)initialPosition.y];
-        board[(int)initialPosition.x][(int)initialPosition.y] = board[(int)finalPosition.x][(int)finalPosition.y];
-        board[(int)finalPosition.x][(int)finalPosition.y] = temp;
+        GameObject temp = board[initialPosition.x][initialPosition.y];
+        board[initialPosition.x][initialPosition.y] = board[finalPosition.x][finalPosition.y];
+        board[finalPosition.x][finalPosition.y] = temp;
 
-        MoveGameObjectToPositionDeterminedByGemComponent(board[(int)initialPosition.x][(int)initialPosition.y]);
-        MoveGameObjectToPositionDeterminedByGemComponent(board[(int)finalPosition.x][(int)finalPosition.y]);
+        MoveGameObjectToPositionDeterminedByGemComponent(board[initialPosition.x][initialPosition.y]);
+        MoveGameObjectToPositionDeterminedByGemComponent(board[finalPosition.x][finalPosition.y]);
     }
 
 
 
 
-    private void checkAllPossibleVerticalMatches()
+    private void CheckAllVerticalMatches()
     {
         for (int i = 0; i < numberOfObjectsInY; i++)
         {
             for (int j = 0; j < numberOfObjectsInX - 2; j++)
             {
-                bool containsAMatch = checkIfPositionContainsAVerticalMatch3(i, j);
+                bool containsAMatch = CheckIfPointStartsAVerticalMatch3(new Point(i, j));
                 if (containsAMatch)
                 {
                     matches[i][j] = true;
@@ -280,13 +294,13 @@ public class Board : MonoBehaviour
 
 
 
-    private void checkAllPossibleHorizontalMatches()
+    private void CheckAllHorizontalMatches()
     {
         for (int i = 0; i < numberOfObjectsInY - 2; i++)
         {
             for (int j = 0; j < numberOfObjectsInX; j++)
             {
-                bool containsAMatch = checkIfPositionContainsAHorizontalMatch3(i, j);
+                bool containsAMatch = CheckIfPointStartsAHorizontalMatch3(new Point(i, j));
                 if (containsAMatch)
                 {
                     matches[i][j] = true;
@@ -298,45 +312,43 @@ public class Board : MonoBehaviour
     }
 
 
-    private bool checkIfPositionContainsAVerticalMatch3(int posX, int posY) {
-        if (numberOfObjectsInY - posY <= 2) return false;
-        Gem.GemType gemtype = getGemTypeAtPosition(posX, posY);
-        Gem.GemType gemtype2 = getGemTypeAtPosition(posX, posY+1);
-        Gem.GemType gemtype3 = getGemTypeAtPosition(posX, posY+2);
+    private bool CheckIfPointStartsAVerticalMatch3(Point point) {
+        if (numberOfObjectsInY - point.y <= 2) return false;
+        Gem.GemType gemtype = GetGemTypeAtPosition(point);
+        Gem.GemType gemtype2 = GetGemTypeAtPosition(point + new Point(0,1));
+        Gem.GemType gemtype3 = GetGemTypeAtPosition(point + new Point(0,2));
         if (gemtype == gemtype2 && gemtype == gemtype3)
         {
-            Debug.Log(posX + " " + posY);
             return true;
         }
         return false;
     }
 
 
-    private bool checkIfPositionContainsAHorizontalMatch3(int posX, int posY)
+    private bool CheckIfPointStartsAHorizontalMatch3(Point point)
     {
-        if (numberOfObjectsInX - posX <= 2) return false;
-        Gem.GemType gemtype = getGemTypeAtPosition(posX, posY);
-        Gem.GemType gemtype2 = getGemTypeAtPosition(posX + 1, posY);
-        Gem.GemType gemtype3 = getGemTypeAtPosition(posX + 2, posY);
-        if (gemtype == gemtype2 && gemtype == gemtype3)
+        if (numberOfObjectsInX - point.x <= 2) return false;
+        Gem.GemType gemtype1 = GetGemTypeAtPosition(point);
+        Gem.GemType gemtype2 = GetGemTypeAtPosition(point + new Point(1, 0));
+        Gem.GemType gemtype3 = GetGemTypeAtPosition(point + new Point(2, 0));
+        if (gemtype1 == gemtype2 && gemtype1 == gemtype3)
         {
-            Debug.Log(posX + " " + posY);
             return true;
         }
         return false;
     }
 
 
-    private Gem.GemType getGemTypeAtPosition(int posX, int posY)
+    private Gem.GemType GetGemTypeAtPosition(Point point)
     {
-        string gemName = getNameOfObjectInPosition(posX, posY);
+        string gemName = GetNameOfObjectInPosition(point);
         GameObject go = GameObject.Find(gemName);
         return go.GetComponent<Gem>().gem;
     }
 
 
-    private string getNameOfObjectInPosition(int posX, int posY) {
-        return "(" + posX.ToString() + ", " + posY.ToString() + ")";
+    private string GetNameOfObjectInPosition(Point point) {
+        return "(" + point.x.ToString() + ", " + point.y.ToString() + ")";
     }
 
 
@@ -354,12 +366,12 @@ public class Board : MonoBehaviour
 
     private void MoveGameObjectToPositionDeterminedByGemComponent(GameObject go) {
         Gem gemComponent = go.GetComponent<Gem>();
-        go.transform.localPosition = new Vector2(gemComponent.positionX*64 + 32, gemComponent.positionY*64 + 32);
-        go.name = getNameOfObjectInPosition(gemComponent.positionX, gemComponent.positionY);
+        go.transform.localPosition = new Vector2(gemComponent.position.x*64 + 32, gemComponent.position.y*64 + 32);
+        go.name = GetNameOfObjectInPosition(gemComponent.position);
     }
 
 
-    private void InitializeBoard()
+    private void InitializeBoardWithRandomGems()
     {
         board = new GameObject[numberOfObjectsInY][];
         for (int i = 0; i < board.Length; i++)
@@ -368,8 +380,7 @@ public class Board : MonoBehaviour
             for (int j = 0; j < board[i].Length; j++)
             {
                 board[i][j] = Instantiate(GetRandomPrefab(), this.transform, false) as GameObject;
-                board[i][j].GetComponent<Gem>().positionX = i;
-                board[i][j].GetComponent<Gem>().positionY = j;
+                board[i][j].GetComponent<Gem>().position = new Point(i, j);
             }
         }
     }
@@ -378,11 +389,11 @@ public class Board : MonoBehaviour
     private GameObject GetRandomPrefab()
     {
         int i = Random.Range(0, 7);
-        return getPrefabBasedOnGemType((Gem.GemType)i);
+        return GetPrefabBasedOnGemType((Gem.GemType)i);
     }
 
 
-    private GameObject getPrefabBasedOnGemType(Gem.GemType gemtype)
+    private GameObject GetPrefabBasedOnGemType(Gem.GemType gemtype)
     {
         switch (gemtype)
         {

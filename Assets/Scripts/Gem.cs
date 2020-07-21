@@ -17,8 +17,7 @@ public class Gem : MonoBehaviour
     }
 
     public GemType gem;
-    public int positionX;
-    public int positionY;
+    public Point position = new Point(0, 0);
 
     public static GemType getRandomGemType() {
         GemType gemType = (GemType) UnityEngine.Random.Range(0, (float)Enum.GetValues(typeof(GemType)).Cast<GemType>().Max());
