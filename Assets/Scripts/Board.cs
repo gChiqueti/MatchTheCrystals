@@ -26,12 +26,25 @@ public class Board : MonoBehaviour
     public void Awake()
     {
         InitializeBoard();
+        InitializeMatchesArrayAsFalse();
         UpdateAllSpritesPositionAndNames();
     }
 
 
     private void Update()
     {
+        if (HaveAnyMatchesInActualGame())
+        {
+            InitializeMatchesArrayAsFalse();
+            FindAllBoardMatches();
+            DestroyAllMatches();
+            MoveGemsDown();
+            InstantiateNewGemsInOrigin();
+            UpdateAllSpritesPositionAndNames();
+            return;
+        }
+
+
         if (Input.GetKeyDown(KeyCode.E))
         {
             UpdateAllSpritesPositionAndNames();
@@ -74,14 +87,54 @@ public class Board : MonoBehaviour
 
             MoveGem(new Vector2(el[0], el[1]), moveDirection);
 
+            InitializeMatchesArrayAsFalse();
             FindAllBoardMatches();
             DestroyAllMatches();
             MoveGemsDown();
             InstantiateNewGemsInOrigin();
             UpdateAllSpritesPositionAndNames();
 
-
         }
+    }
+
+
+    private bool GameHaveAPossibleMoveToMake()
+    {
+        var boardCopy = (GameObject[][]) board.Clone();
+
+        for (int i = 0; i < numberOfObjectsInX-1; i++)
+        {
+            for (int j = 0; j < numberOfObjectsInY-1; j++)
+            {
+                InitializeMatchesArrayAsFalse();
+                board = (GameObject[][]) boardCopy.Clone();
+                MoveGem(new Vector2(i, j), new Vector2(1, 0));
+                FindAllBoardMatches();
+                if (HaveAnyMatchesInActualGame())
+                {
+                    InitializeMatchesArrayAsFalse();
+                    board = (GameObject[][])boardCopy.Clone();
+                    return true;
+                }
+            }
+        }
+        InitializeMatchesArrayAsFalse();
+        board = (GameObject[][])boardCopy.Clone();
+        return false;
+    }
+
+    private bool HaveAnyMatchesInActualGame() {
+        for (int i = 0; i < matches.Length; i++)
+        {
+            for (int j = 0; j < matches[i].Length; j++)
+            {
+                if (matches[i][j] == true)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 
