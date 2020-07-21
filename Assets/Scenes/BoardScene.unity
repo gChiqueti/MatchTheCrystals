@@ -392,7 +392,7 @@ MonoBehaviour:
     type: 3}
   crystalPrefab: {fileID: 6291232836797137743, guid: 56a736708333e0d4287b423c8e3cb0fe,
     type: 3}
-  brocolliPrefab: {fileID: 1885183682560809104, guid: 77ece0eaa0090ab4dbcdc607c77fb586,
+  broccoliPrefab: {fileID: 1885183682560809104, guid: 77ece0eaa0090ab4dbcdc607c77fb586,
     type: 3}
   milkPrefab: {fileID: 8992899378810924372, guid: 894d5ae6b20059543abd2d036fe6c628,
     type: 3}

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 7343202941569602776}
   - component: {fileID: 7343202941569602779}
   - component: {fileID: 7343202941569602778}
+  - component: {fileID: 8881057638363564260}
   m_Layer: 5
   m_Name: Apple
   m_TagString: Untagged
@@ -118,3 +119,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &8881057638363564260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7343202941569602780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 500772c639589854eb8802676ec8afe0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gem: 4
+  positionX: 0
+  positionY: 0
