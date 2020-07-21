@@ -77,8 +77,8 @@ public class Board : MonoBehaviour
             FindAllBoardMatches();
             DestroyAllMatches();
             MoveGemsDown();
-            //InstantiateNewGems();
-            //UpdateAllSpritesPositionAndNames();
+            InstantiateNewGemsInOrigin();
+            UpdateAllSpritesPositionAndNames();
 
 
         }
@@ -121,7 +121,7 @@ public class Board : MonoBehaviour
 
     }
 
-    private void InstantiateNewGems()
+    private void InstantiateNewGemsInOrigin()
     {
         for (int i = 0; i < board.Length; i++)
         {
