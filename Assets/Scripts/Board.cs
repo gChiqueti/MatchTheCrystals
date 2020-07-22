@@ -1,11 +1,19 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Board : MonoBehaviour
 {
     public int numberOfObjectsInY = 6;
     public int numberOfObjectsInX = 6;
+    public Text Score;
+
+    public AudioClip clickGem;
+    public AudioClip swap;
+    public AudioClip match;
+    public AudioSource source;
 
     public GameObject[][] board;
     public bool[][] matches;
@@ -23,14 +31,17 @@ public class Board : MonoBehaviour
 
     private const int MINIMUN_SWAP_DISTANCE_IN_PIXELS = 16;
     private const float MAX_SWAP_ANGULATION_IN_DEG = 90.0f; // value between 0 and 90 degrees;
+    private const int MAX_SIZE_OF_BOARD = 6;
+
+    private const int FIXED_SCREEN_WIDTH = 448;
 
     public void Awake()
     {
         InitializeBoardWithRandomGems();
         InitializeMatchesArrayWithFalseValues();
         UpdateAllSpritesPositionAndNames();
-    }
 
+    }
 
     private void Update()
     {
@@ -45,38 +56,78 @@ public class Board : MonoBehaviour
             return;
         }
 
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            Debug.Log(Screen.width);
+            Debug.Log(Screen.height);
+            Debug.Log("iufhdof");
+        }
+
 
         if (Input.GetKeyDown(KeyCode.Mouse0))
         {
             initialClickPosition = Input.mousePosition;
+            Debug.Log(initialClickPosition);
+            initialClickPosition = initialClickPosition * FIXED_SCREEN_WIDTH / Screen.width;
+
+            
+            source.clip = clickGem;
+            source.Play();
         }
 
         if (Input.GetKeyUp(KeyCode.Mouse0))
         {
             finalClickPosition = Input.mousePosition;
-            
-            if (Vector3.Distance(initialClickPosition, finalClickPosition) < MINIMUN_SWAP_DISTANCE_IN_PIXELS)
+            finalClickPosition = finalClickPosition * FIXED_SCREEN_WIDTH / Screen.width;
+
+            float swap_distance_pixels = Vector3.Distance(initialClickPosition, finalClickPosition);
+            if (swap_distance_pixels <= MINIMUN_SWAP_DISTANCE_IN_PIXELS)
             {
                 return;
             }
             
             Point clickedPoint = GetElementOnPixel(initialClickPosition.x, initialClickPosition.y);
-            if (clickedPoint.x < 0 || clickedPoint.x > numberOfObjectsInX || clickedPoint.y < 0 || clickedPoint.y > numberOfObjectsInY)
+            if (clickedPoint.x < 0 || clickedPoint.x >= numberOfObjectsInX || 
+                clickedPoint.y < 0 || clickedPoint.y >= numberOfObjectsInY)
             {
                 return;
             }
 
+            // moveDirection é sempre um desses valores: Point(1, 0); Point(-1, 0); Point(0, 1); Point(0, -1) ou Point(0, 0)
             Point moveDirection = GetMovementDirectionOfGem(initialClickPosition, finalClickPosition);
+
+            source.clip = swap;
+            source.Play();
+
             MoveGem(clickedPoint, moveDirection);
 
             InitializeMatchesArrayWithFalseValues();
             PopulateMatchesArrayWithMatches();
+            CalculateAndUpdateScore();
             DestroyAllPrefabsWithMatches();
+
+
             MoveGemsDown();
             InstantiateNewGemsInOrigin();
             UpdateAllSpritesPositionAndNames();
 
         }
+    }
+
+    private void CalculateAndUpdateScore()
+    {
+        int score = 0;
+        for (int i = 0; i < matches.Length; i++) {
+            for (int j = 0; j < matches[i].Length; j++) {
+                if (matches[i][j] == true) {
+                    score += 1;
+                }
+            }
+        }
+
+        int actualScore = Int16.Parse(Score.text);
+        int finalScore = actualScore + score;
+        Score.text = finalScore.ToString();
     }
 
 
@@ -201,7 +252,7 @@ public class Board : MonoBehaviour
                 if (board[i][j] == null)
                 {
                     board[i][j] = Instantiate(GetRandomPrefab(), this.transform, false) as GameObject;
-                    board[i][j].GetComponent<Gem>().position = new Point(i, j);
+                    board[i][j].GetComponent<Gem>().position = new Point(i, j);  
                 }
             }
         }
@@ -366,7 +417,8 @@ public class Board : MonoBehaviour
 
     private void MoveGameObjectToPositionDeterminedByGemComponent(GameObject go) {
         Gem gemComponent = go.GetComponent<Gem>();
-        go.transform.localPosition = new Vector2(gemComponent.position.x*64 + 32, gemComponent.position.y*64 + 32);
+        go.transform.localPosition = new Vector2(gemComponent.position.x*64 + 32, 
+                                                 gemComponent.position.y*64 + 32);
         go.name = GetNameOfObjectInPosition(gemComponent.position);
     }
 
@@ -388,7 +440,7 @@ public class Board : MonoBehaviour
 
     private GameObject GetRandomPrefab()
     {
-        int i = Random.Range(0, 7);
+        int i = UnityEngine.Random.Range(0, 7);
         return GetPrefabBasedOnGemType((Gem.GemType)i);
     }
 
