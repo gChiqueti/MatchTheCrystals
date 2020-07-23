@@ -32,7 +32,6 @@ public class Board : MonoBehaviour
     private const int MINIMUN_SWAP_DISTANCE_IN_PIXELS = 16;
     private const float MAX_SWAP_ANGULATION_IN_DEG = 90.0f; // value between 0 and 90 degrees;
     private const int MAX_SIZE_OF_BOARD = 6;
-
     private const int FIXED_SCREEN_WIDTH = 448;
 
     public void Awake()
@@ -40,7 +39,6 @@ public class Board : MonoBehaviour
         InitializeBoardWithRandomGems();
         InitializeMatchesArrayWithFalseValues();
         UpdateAllGemsPositionsAndNames();
-
     }
 
     private void Update()
