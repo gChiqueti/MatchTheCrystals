@@ -8,7 +8,7 @@ public class Board : MonoBehaviour
 {
     public int numberOfObjectsInY = 6;
     public int numberOfObjectsInX = 6;
-    public Text Score;
+    public Score Score;
 
     public AudioClip clickGem;
     public AudioClip swap;
@@ -39,7 +39,7 @@ public class Board : MonoBehaviour
     {
         InitializeBoardWithRandomGems();
         InitializeMatchesArrayWithFalseValues();
-        UpdateAllSpritesPositionAndNames();
+        UpdateAllGemsPositionsAndNames();
 
     }
 
@@ -49,18 +49,11 @@ public class Board : MonoBehaviour
         {
             InitializeMatchesArrayWithFalseValues();
             PopulateMatchesArrayWithMatches();
-            DestroyAllPrefabsWithMatches();
+            DestroyAllGemsThatIsInAMatch();
             MoveGemsDown();
             InstantiateNewGemsInOrigin();
-            UpdateAllSpritesPositionAndNames();
+            UpdateAllGemsPositionsAndNames();
             return;
-        }
-
-        if (Input.GetKeyDown(KeyCode.E))
-        {
-            Debug.Log(Screen.width);
-            Debug.Log(Screen.height);
-            Debug.Log("iufhdof");
         }
 
 
@@ -70,7 +63,6 @@ public class Board : MonoBehaviour
             Debug.Log(initialClickPosition);
             initialClickPosition = initialClickPosition * FIXED_SCREEN_WIDTH / Screen.width;
 
-            
             source.clip = clickGem;
             source.Play();
         }
@@ -104,12 +96,10 @@ public class Board : MonoBehaviour
             InitializeMatchesArrayWithFalseValues();
             PopulateMatchesArrayWithMatches();
             CalculateAndUpdateScore();
-            DestroyAllPrefabsWithMatches();
-
-
+            DestroyAllGemsThatIsInAMatch();
             MoveGemsDown();
             InstantiateNewGemsInOrigin();
-            UpdateAllSpritesPositionAndNames();
+            UpdateAllGemsPositionsAndNames();
 
         }
     }
@@ -125,9 +115,7 @@ public class Board : MonoBehaviour
             }
         }
 
-        int actualScore = Int16.Parse(Score.text);
-        int finalScore = actualScore + score;
-        Score.text = finalScore.ToString();
+        Score.AddScore(score);
     }
 
 
@@ -275,7 +263,7 @@ public class Board : MonoBehaviour
         CheckAllHorizontalMatches();
     }
 
-    private void DestroyAllPrefabsWithMatches()
+    private void DestroyAllGemsThatIsInAMatch()
     {
         for (int i = 0; i < numberOfObjectsInY; i++)
         {
@@ -403,7 +391,7 @@ public class Board : MonoBehaviour
     }
 
 
-    private void UpdateAllSpritesPositionAndNames()
+    private void UpdateAllGemsPositionsAndNames()
     {
         foreach(GameObject[] row in board)
         {
